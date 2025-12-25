@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MRI Snapshot Analyzer</title>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        max-width: 960px;
+        margin: 40px auto;
+        padding: 0 16px;
+        color: #1b1b1b;
+        background: #f7f7fb;
+      }
+      header {
+        margin-bottom: 24px;
+      }
+      .card {
+        background: white;
+        padding: 24px;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(16, 24, 40, 0.1);
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 16px;
+      }
+      button {
+        background: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 18px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      button:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+      }
+      input[type="file"] {
+        display: block;
+        margin-top: 8px;
+      }
+      pre {
+        background: #111827;
+        color: #e5e7eb;
+        padding: 16px;
+        border-radius: 8px;
+        overflow-x: auto;
+      }
+      .meta {
+        color: #6b7280;
+        margin-top: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Приложение для анализа снимков МРТ</h1>
+      <p class="meta">
+        Демонстрационный интерфейс: загрузите DICOM (.dcm) или NIfTI (.nii/.nii.gz)
+        и получите базовый отчёт.
+      </p>
+    </header>
+
+    <section class="card">
+      <label for="file">Файл исследования</label>
+      <input id="file" type="file" accept=".dcm,.nii,.nii.gz" />
+
+      <div class="actions">
+        <button id="analyze" disabled>Запустить анализ</button>
+        <button id="clear">Очистить</button>
+      </div>
+
+      <h3>Результат</h3>
+      <pre id="output">Ожидание файла...</pre>
+    </section>
+
+    <script>
+      const fileInput = document.getElementById("file");
+      const analyzeButton = document.getElementById("analyze");
+      const clearButton = document.getElementById("clear");
+      const output = document.getElementById("output");
+
+      const setOutput = (data) => {
+        output.textContent = JSON.stringify(data, null, 2);
+      };
+
+      fileInput.addEventListener("change", () => {
+        analyzeButton.disabled = fileInput.files.length === 0;
+        if (fileInput.files.length === 0) {
+          output.textContent = "Ожидание файла...";
+        }
+      });
+
+      clearButton.addEventListener("click", () => {
+        fileInput.value = "";
+        analyzeButton.disabled = true;
+        output.textContent = "Ожидание файла...";
+      });
+
+      analyzeButton.addEventListener("click", async () => {
+        if (fileInput.files.length === 0) return;
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        output.textContent = "Анализируем...";
+
+        try {
+          const response = await fetch("/analyze", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await response.json();
+          setOutput(data);
+        } catch (error) {
+          setOutput({ status: "error", message: error.message });
+        }
+      });
+    </script>
+  </body>
+</html>
